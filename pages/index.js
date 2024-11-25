@@ -11,33 +11,36 @@ import { LoadingScreen } from "../components/LoadingScreen";
 import { ErrorScreen } from "../components/ErrorScreen";
 
 import styles from "../styles/Home.module.css";
+import config from "../config/settings.json";
 
 export const App = () => {
-  const [cityInput, setCityInput] = useState("Riga");
+  const [latitudeInput, setLatitudeInput] = useState(config.defaultLatitude);
+  const [longitudeInput, setLongitudeInput] = useState(config.defaultLongitude);
   const [triggerFetch, setTriggerFetch] = useState(true);
   const [weatherData, setWeatherData] = useState();
   const [unitSystem, setUnitSystem] = useState("metric");
 
   useEffect(() => {
     const getData = async () => {
-      const res = await fetch("api/data", {
+      const res = await fetch("/api/data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cityInput }),
+        body: JSON.stringify({ latitudeInput, longitudeInput }),
       });
       const data = await res.json();
       setWeatherData({ ...data });
-      setCityInput("");
+      setLatitudeInput("");
+      setLongitudeInput("");
     };
     getData();
-  }, [triggerFetch]);
+  }, [triggerFetch, latitudeInput, longitudeInput]);
 
   const changeSystem = () =>
-    unitSystem == "metric"
+    unitSystem === "metric"
       ? setUnitSystem("imperial")
       : setUnitSystem("metric");
 
-  return weatherData && !weatherData.message ? (
+  return weatherData && !weatherData.error ? (
     <div className={styles.wrapper}>
       <MainCard
         city={weatherData.name}
@@ -51,16 +54,29 @@ export const App = () => {
         <Header>
           <DateAndTime weatherData={weatherData} unitSystem={unitSystem} />
           <Search
-            placeHolder="Search a city..."
-            value={cityInput}
+            placeHolder="Enter Latitude..."
+            value={latitudeInput}
             onFocus={(e) => {
               e.target.value = "";
               e.target.placeholder = "";
             }}
-            onChange={(e) => setCityInput(e.target.value)}
+            onChange={(e) => setLatitudeInput(e.target.value)}
             onKeyDown={(e) => {
               e.keyCode === 13 && setTriggerFetch(!triggerFetch);
-              e.target.placeholder = "Search a city...";
+              e.target.placeholder = "Enter Latitude...";
+            }}
+          />
+          <Search
+            placeHolder="Enter Longitude..."
+            value={longitudeInput}
+            onFocus={(e) => {
+              e.target.value = "";
+              e.target.placeholder = "";
+            }}
+            onChange={(e) => setLongitudeInput(e.target.value)}
+            onKeyDown={(e) => {
+              e.keyCode === 13 && setTriggerFetch(!triggerFetch);
+              e.target.placeholder = "Enter Longitude...";
             }}
           />
         </Header>
@@ -69,10 +85,12 @@ export const App = () => {
       </ContentBox>
     </div>
   ) : weatherData && weatherData.message ? (
-    <ErrorScreen errorMessage="City not found, try again!">
+    <ErrorScreen errorMessage="Data not found, try again!">
       <Search
         onFocus={(e) => (e.target.value = "")}
-        onChange={(e) => setCityInput(e.target.value)}
+        onChange={(e) =>
+          setLatitudeInput(e.target.value) && setLongitudeInput(e.target.value)
+        }
         onKeyDown={(e) => e.keyCode === 13 && setTriggerFetch(!triggerFetch)}
       />
     </ErrorScreen>
